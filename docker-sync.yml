@@ -14,3 +14,4 @@ syncs:
       - '.vscode'
       - '.github'
       - 'tests'
+      - '__pycache__'

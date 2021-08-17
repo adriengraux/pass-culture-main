@@ -33,7 +33,7 @@ services:
     container_name: pc-flask
     command: ["./start-api-when-database-is-ready.sh"]
     volumes:
-      - appcode-native-osx-sync:/opt/services/flaskapp/src:nocopy,delegated
+      - appcode-native-osx-sync:/opt/services/flaskapp/src:delegated
     env_file:
       - env_file
       - ${ENV:-development}_env_file
