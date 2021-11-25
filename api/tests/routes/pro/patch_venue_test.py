@@ -2,6 +2,7 @@ from unittest.mock import patch
 
 import pytest
 
+from pcapi.core.finance.factories import BusinessUnitFactory
 import pcapi.core.offerers.factories as offerers_factories
 import pcapi.core.offerers.models as offerers_models
 import pcapi.core.offers.factories as offers_factories
@@ -196,6 +197,27 @@ class Returns200Test:
         # Then
         assert response.status_code == 200
         assert response.json["siret"] == venue.siret
+
+    @pytest.mark.usefixtures("db_session")
+    def test_edit_bank_information_id(self, app) -> None:
+        user_offerer = offers_factories.UserOffererFactory()
+        venue = offers_factories.VenueFactory(
+            managingOfferer=user_offerer.offerer,
+            siret="00000000000001",
+            businessUnit__siret="00000000000002",
+        )
+
+        BusinessUnitFactory(id=15, bankAccount__id=16, bankAccount__offererId=user_offerer.offerer.id)
+        venue_data = populate_missing_data_from_venue(
+            {"bankInformationId": 16},
+            venue,
+        )
+        auth_request = TestClient(app.test_client()).with_session_auth(email=user_offerer.user.email)
+        response = auth_request.patch("/venues/%s" % humanize(venue.id), json=venue_data)
+
+        assert response.status_code == 200
+        assert venue.businessUnit.id == 15
+        assert venue.businessUnit.bankAccount.id == 16
 
 
 @pytest.mark.usefixtures("db_session")

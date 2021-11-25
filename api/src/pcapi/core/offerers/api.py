@@ -11,6 +11,7 @@ from pcapi.connectors.api_adage import CulturalPartnerNotFoundException
 from pcapi.connectors.api_adage import get_adage_offerer
 from pcapi.core import object_storage
 from pcapi.core import search
+from pcapi.core.finance.models import BusinessUnit
 from pcapi.core.mails import MailServiceException
 from pcapi.core.offerers.models import ApiKey
 from pcapi.core.offerers.models import Offerer
@@ -27,6 +28,7 @@ from pcapi.core.users.repository import get_users_with_validated_attachment_by_o
 from pcapi.domain.admin_emails import maybe_send_offerer_validation_email
 from pcapi.domain.pro_emails import send_attachment_validation_email_to_pro_offerer
 from pcapi.domain.pro_emails import send_validation_confirmation_email_to_pro
+from pcapi.models.bank_information import BankInformationStatus
 from pcapi.models.db import db
 from pcapi.repository import repository
 from pcapi.routes.serialization import venues_serialize
@@ -61,7 +63,12 @@ def _get_digital_venue_type_id() -> int:
     return VenueType.query.filter_by(label="Offre numérique").one().id
 
 
-def update_venue(venue: Venue, contact_data: venues_serialize.VenueContactModel = None, **attrs: typing.Any) -> Venue:
+def update_venue(
+    venue: Venue,
+    contact_data: venues_serialize.VenueContactModel = None,
+    bank_information_id: int = None,
+    **attrs: typing.Any,
+) -> Venue:
     validation.validate_coordinates(attrs.get("latitude"), attrs.get("longitude"))
     modifications = {field: value for field, value in attrs.items() if venue.field_exists_and_has_changed(field, value)}
 
@@ -75,6 +82,14 @@ def update_venue(venue: Venue, contact_data: venues_serialize.VenueContactModel 
 
     venue.populate_from_dict(modifications)
 
+    if bank_information_id:
+        bank_information_has_changed = (not venue.businessUnit) or (
+            venue.businessUnit and venue.businessUnit.bankAccount.id != bank_information_id
+        )
+        if bank_information_has_changed:
+
+            venue = update_venue_bank_information(venue, bank_information_id)
+
     # TODO: Remove this step when a new stable venue type system is setup
     venue.fill_venue_type_code_from_label()
 
@@ -85,6 +100,24 @@ def update_venue(venue: Venue, contact_data: venues_serialize.VenueContactModel 
     if indexing_modifications_fields or contact_data:
         search.async_index_offers_of_venue_ids([venue.id])
 
+    return venue
+
+
+def update_venue_bank_information(venue: Venue, bank_information_id: int) -> Venue:
+    bank_information_cannot_be_edited = venue.businessUnit and venue.businessUnit.siret == venue.siret
+    if bank_information_cannot_be_edited:
+        return venue  # TODO not yet implemented, throw exception if necessary
+
+    business_unit = BusinessUnit.query.filter(BusinessUnit.bankAccountId == bank_information_id).one_or_none()
+    bank_information_can_be_associated = (
+        business_unit
+        and business_unit.bankAccount.status == BankInformationStatus.ACCEPTED
+        and business_unit.bankAccount.offererId == venue.managingOffererId
+    )
+    if not bank_information_can_be_associated:
+        return venue  # TODO add exception cannot associate bank information from another offerer
+
+    venue.businessUnit = business_unit
     return venue
 
 

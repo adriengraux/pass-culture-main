@@ -4,9 +4,11 @@ from unittest.mock import patch
 from freezegun import freeze_time
 import pytest
 
+from pcapi.core.finance import factories as finance_factories
 from pcapi.core.offerers import api as offerers_api
 from pcapi.core.offerers import factories as offerers_factories
 from pcapi.core.offerers import models as offerers_models
+from pcapi.core.offerers.api import update_venue_bank_information
 from pcapi.core.offerers.exceptions import ValidationTokenNotFoundError
 from pcapi.core.offerers.models import ApiKey
 import pcapi.core.offers.factories as offers_factories
@@ -248,6 +250,22 @@ class EditVenueContactTest:
         assert venue.contact.email == contact_data.email
         assert venue.contact.social_medias == contact_data.social_medias
         assert not venue.contact.phone_number
+
+
+class EditVenueBankInformationTest:
+    def test_update_bank_information_success(self):
+        venue = offers_factories.VenueFactory(siret="00000000000001", businessUnit__siret="00000000000002")
+        business_unit = finance_factories.BusinessUnitFactory(
+            siret="00000000000003", bankAccount__offererId=venue.managingOffererId
+        )
+
+        new_bank_information_id = business_unit.bankAccount.id
+
+        venue = update_venue_bank_information(venue, new_bank_information_id)
+
+        assert venue.businessUnit.id == business_unit.id
+        assert venue.businessUnit.siret == "00000000000003"
+        assert venue.businessUnit.bankAccount.id == new_bank_information_id
 
 
 class ApiKeyTest:
