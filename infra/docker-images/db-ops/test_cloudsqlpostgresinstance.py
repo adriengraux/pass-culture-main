@@ -249,5 +249,45 @@ class TestCloudSQLPostgresInstance(unittest.TestCase):
         self.sqladmin_operations_service.get.assert_called_with(project=self.instance.project, operation=self.fake_sql_operation_name.get("name"))
         self.sqladmin_operations_service.get.return_value.execute.assert_called()
 
+    def test_get_last_successful_backup_run_id_returns_last_successful_backup_run_id(self):
+        self.sqladmin_backup_runs_service.list.return_value.execute.return_value = {
+            "items": [{
+                "id": "fake-id",
+                "status": "SUCCESSFUL",
+                "endTime": "2012-11-15T16:19:00.094Z"
+            },
+                {
+                    "id": "fake-id-2",
+                    "status": "FAILED",
+                    "endTime": "2011-11-15T16:19:00.094Z"
+                }
+            ],
+        }
+
+        last_successful_backup_run_id = self.instance.get_last_successful_backup_run_id()
+
+        self.sqladmin_backup_runs_service.list.assert_called_with(project=self.instance.project,
+                                                                  instance=self.instance.name)
+        self.assertEqual(last_successful_backup_run_id, "fake-id")
+
+    def test_get_last_successful_backup_run_id_raise_error_when_there_is_not_successful_backup_run(self):
+        self.sqladmin_backup_runs_service.list.return_value.execute.return_value = {
+            "items": [{
+                "id": "fake-id",
+                "status": "FAILED",
+                "endTime": "2012-11-15T16:19:00.094Z"
+            },
+                {
+                    "id": "fake-id-2",
+                    "status": "FAILED",
+                    "endTime": "2011-11-15T16:19:00.094Z"
+                }
+            ],
+        }
+
+        self.assertRaises(LookupError, self.instance.get_last_successful_backup_run_id)
+        self.sqladmin_backup_runs_service.list.assert_called_with(project=self.instance.project,
+                                                                  instance=self.instance.name)
+
 if __name__ == '__main__':
     unittest.main()
