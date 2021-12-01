@@ -64,6 +64,9 @@ class MagicEnum(sqla_types.TypeDecorator):
         else:
             raise ValueError(f"Unsupported type of value for {enum_class}")
 
+    def __repr__(self):
+        return f"MagicEnum(enum_class={self.enum.__module__}.{self.enum.__name__})"
+
     # Avoid pylint `abstract-method` warning. It's not actually required
     # to implement this method.
     process_literal_param = sqla_types.TypeDecorator.process_literal_param

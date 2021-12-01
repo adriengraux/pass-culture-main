@@ -2,6 +2,7 @@ from alembic import context
 from sqlalchemy import create_engine
 
 from pcapi import settings
+from pcapi.alembic import migration_types
 from pcapi.models import db
 
 
@@ -16,6 +17,14 @@ def include_object(object, name, type_, reflected, compare_to) -> bool:  # pylin
     if name in ("transaction", "activity"):
         return False
     return True
+
+
+def render_item(type_, obj, autogen_context):
+    if type_ == "type" and isinstance(obj, migration_types.MagicEnum):
+        autogen_context.imports.add(f"import {obj.enum_class.__module__}")
+        autogen_context.imports.add("from pcapi.alembic import migration_types")
+        return "types.%r" % obj
+    return False
 
 
 def run_migrations() -> None:
@@ -35,6 +44,7 @@ def run_migrations() -> None:
             include_schemas=True,
             transaction_per_migration=True,
             compare_server_default=True,
+            user_module_prefix="migration_types.",
         )
         with context.begin_transaction():
             context.run_migrations()
