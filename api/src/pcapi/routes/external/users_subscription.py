@@ -8,6 +8,7 @@ from pcapi.core.subscription import api as subscription_api
 from pcapi.core.subscription import messages as subscription_messages
 from pcapi.core.subscription.ubble import api as ubble_subscription_api
 from pcapi.core.users.repository import find_user_by_email
+from pcapi.models.api_errors import ApiErrors
 from pcapi.models.beneficiary_import import BeneficiaryImportSources
 from pcapi.models.beneficiary_import_status import ImportStatus
 from pcapi.repository import repository
@@ -134,5 +135,22 @@ def ubble_webhook_update_application_status(
         raise ValueError(f"no Ubble fraud check found with identification_id {body.identification_id}")
 
     ubble_subscription_api.update_ubble_workflow(fraud_check, body.status)
+
+    return ubble_validation.WebhookDummyReponse()
+
+
+@public_api.route("/webhooks/ubble/store_id_pictures", methods=["POST"])
+@spectree_serialize(
+    on_success_status=200,
+    response_model=ubble_validation.WebhookDummyReponse,
+)
+def ubble_webhook_store_id_picturess(
+    body: ubble_validation.WebhookStoreIdPicturesRequest,
+) -> ubble_validation.WebhookDummyReponse:
+    logger.info("Webhook store id pictures called ", extra={"identification_id": body.identification_id})
+    try:
+        ubble_subscription_api.archive_ubble_user_id_pictures(body.identification_id)
+    except ValueError as err:
+        raise ApiErrors({"err": str(err)}, status_code=404)
 
     return ubble_validation.WebhookDummyReponse()

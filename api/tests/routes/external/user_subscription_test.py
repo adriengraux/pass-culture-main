@@ -186,7 +186,6 @@ class DmsWebhookApplicationTest:
     @patch.object(DMSGraphQLClient, "execute_query")
     @patch.object(DMSGraphQLClient, "send_user_message")
     def test_dms_request_with_unexisting_user(self, send_user_message, execute_query, client):
-
         execute_query.return_value = make_single_application(
             12, state=GraphQLApplicationStates.draft.value, email="user@example.com"
         )

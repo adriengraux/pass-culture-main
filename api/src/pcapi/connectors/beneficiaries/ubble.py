@@ -61,7 +61,6 @@ def _extract_useful_content_from_response(
     identification_url = _get_data_attribute(response, "identification-url")
     status = _get_data_attribute(response, "status")
     registered_at = _get_data_attribute(response, "created-at")
-
     content = ubble_models.UbbleContent(
         status=status,
         birth_date=getattr(documents, "birth_date", None),
@@ -76,6 +75,8 @@ def _extract_useful_content_from_response(
         identification_id=identification_id,
         identification_url=identification_url,
         registration_datetime=registered_at,
+        signed_image_front_url=getattr(documents, "signed_image_front_url", None),
+        signed_image_back_url=getattr(documents, "signed_image_back_url", None),
     )
     return content
 

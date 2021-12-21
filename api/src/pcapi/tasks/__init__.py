@@ -6,3 +6,4 @@ def install_handlers(app: Flask) -> None:
     from . import account
     from . import batch_tasks
     from . import sendinblue_tasks
+    from . import ubble_tasks

@@ -10,9 +10,12 @@ import pytest
 from pcapi import settings
 from pcapi.core.fraud import factories as fraud_factories
 from pcapi.core.fraud import models as fraud_models
+from pcapi.core.fraud.models import BeneficiaryFraudCheck
+from pcapi.core.fraud.models.ubble import UbbleContent
 import pcapi.core.mails.testing as mails_testing
 from pcapi.core.subscription import api as subscription_api
 from pcapi.core.subscription import models as subscription_models
+from pcapi.core.subscription.ubble.api import download_ubble_document_pictures
 from pcapi.core.testing import override_features
 from pcapi.core.users import constants as users_constants
 from pcapi.core.users import factories as users_factories
@@ -553,8 +556,8 @@ class OnSucessfulDMSApplicationTest:
         check = fraud_factories.BeneficiaryFraudCheckFactory(
             user=applicant, type=fraud_models.FraudCheckType.HONOR_STATEMENT, status=fraud_models.FraudCheckStatus.OK
         )
-        # when
 
+        # when
         subscription_api.on_successful_application(
             user=applicant,
             source=BeneficiaryImportSources.demarches_simplifiees,
@@ -592,6 +595,7 @@ class OnSucessfulDMSApplicationTest:
             registration_datetime=datetime.today(),
         )
         applicant = users_factories.UserFactory(email=information.email)
+
         # when
         subscription_api.on_successful_application(
             user=applicant,
@@ -767,3 +771,27 @@ class CommonSubscritpionTest:
             subscription_api.handle_eligibility_difference_between_declaration_and_identity_provider(fraud_check)
             == fraud_check
         )
+
+
+class DownloadUbbleDocumentPictureTest:
+    def test_download_ubble_document_pictures(self, requests_mock):
+        # Given
+        picture_path = "https://storage.ubble.ai/production-ubble-ai/FRA-I4-Front-1640326309790.png"
+        ubble_content = UbbleContent(signed_image_front_url=picture_path, signed_image_back_url=None)
+        fraud_check = BeneficiaryFraudCheck(userId="123", thirdPartyId="abcd")
+        file_name_front = "123-abcd-front.png"
+
+        requests_mock.register_uri(
+            "GET",
+            picture_path,
+            status_code=200,
+            headers={"content-type": "image/png"},
+        )
+
+        # When
+        res = download_ubble_document_pictures(ubble_content=ubble_content, fraud_check=fraud_check)
+
+        # Then
+        assert res["front"]["file_name"] == file_name_front
+        assert res["front"]["file_path"].exists()
+        assert res["back"] is None

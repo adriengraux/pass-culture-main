@@ -214,6 +214,18 @@ def ubble_mocker() -> typing.Callable:
         url = f"{settings.UBBLE_API_URL}/identifications/{identification_id}/"
         with requests_mock.Mocker() as m:
             getattr(m, method)(url, text=response)
+            m.register_uri(
+                "get",
+                "https://storage.ubble.ai/production-ubble-ai/UBBLE_DEMO/front-picture.png?response-content-type=image%2Fpng",
+                status_code=200,
+                headers={"content-type": "image/png"},
+            )
+            m.register_uri(
+                "get",
+                "https://storage.ubble.ai/production-ubble-ai/UBBLE_DEMO/back-picture.png?response-content-type=image%2Fpng",
+                status_code=200,
+                headers={"content-type": "image/png"},
+            )
             yield
 
     return ubble_mock

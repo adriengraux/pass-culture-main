@@ -1,4 +1,9 @@
 import logging
+import mimetypes
+import pathlib
+import shutil
+import tempfile
+from typing import Optional
 
 import flask
 
@@ -7,11 +12,14 @@ from pcapi.connectors.beneficiaries import ubble
 from pcapi.core.fraud import exceptions as fraud_exceptions
 import pcapi.core.fraud.api as fraud_api
 import pcapi.core.fraud.models as fraud_models
+from pcapi.core.fraud.models.ubble import UbbleContent
 from pcapi.core.subscription import api as subscription_api
 from pcapi.core.subscription import messages as subscription_messages
 from pcapi.core.users import models as users_models
 from pcapi.models.beneficiary_import import BeneficiaryImportSources
 import pcapi.repository as pcapi_repository
+from pcapi.tasks import ubble_tasks
+from pcapi.utils import requests
 
 
 logger = logging.getLogger(__name__)
@@ -55,6 +63,9 @@ def update_ubble_workflow(
                 subscription_api.handle_validation_errors(user=user, reason_codes=fraud_check.reasonCodes)
                 subscription_messages.on_ubble_journey_cannot_continue(user)
                 return
+
+            payload = ubble_tasks.StoreIdPictureRequest(identification_id=fraud_check.thirdPartyId)
+            ubble_tasks.store_id_pictures_task.delay(payload)
 
             try:
                 subscription_api.on_successful_application(
@@ -104,3 +115,63 @@ def is_ubble_workflow_restartable(fraud_check: fraud_models.BeneficiaryFraudChec
     if ubble_content.status == fraud_models.ubble_models.UbbleIdentificationStatus.INITIATED:
         return True
     return False
+
+
+def archive_ubble_user_id_pictures(identification_id: str) -> bool:
+    # get urls from Ubble
+    fraud_check = fraud_api.ubble.get_ubble_fraud_check(identification_id)
+    if not fraud_check:
+        raise ValueError(f"no Ubble fraud check found with identification_id {identification_id}")
+
+    ubble_content = ubble.get_content(fraud_check.thirdPartyId)
+    download_ubble_document_pictures(ubble_content, fraud_check)
+
+    # TODO (jsdupuis) archive each pict on remote storage (OVH or other)
+
+    # pass boolean "are_pictures_stored" to True when they are really saved
+    are_pictures_stored = False
+
+    # update fraud_models.BeneficiaryFraudCheck.storedIdPict
+    fraud_check.idPicturesStored = are_pictures_stored
+    pcapi_repository.repository.save(fraud_check)
+
+    return True
+
+
+def download_ubble_document_pictures(
+    ubble_content: UbbleContent, fraud_check: fraud_models.BeneficiaryFraudCheck
+) -> dict:
+    file_front = file_back = None
+
+    if ubble_content.signed_image_front_url is not None:
+        file_front = _download_ubble_picture(fraud_check, ubble_content.signed_image_front_url, "front")
+
+    if ubble_content.signed_image_back_url is not None:
+        file_back = _download_ubble_picture(fraud_check, ubble_content.signed_image_back_url, "back")
+
+    return {"front": file_front, "back": file_back}
+
+
+def _download_ubble_picture(
+    fraud_check: fraud_models.BeneficiaryFraudCheck, url: str, face_name: str
+) -> Optional[dict]:
+    response = requests.get(url)
+
+    if response.status_code != 200:
+        return None
+
+    content_type = response.headers.get("content-type")
+    file_name = _generate_storable_picture_filename(fraud_check, face_name, content_type)
+    file_path = pathlib.Path(tempfile.mkdtemp()) / file_name
+
+    with open(file_path, "wb") as out_file:
+        shutil.copyfileobj(response.raw, out_file)
+
+    return {"file_name": file_name, "file_path": file_path}
+
+
+def _generate_storable_picture_filename(
+    fraud_check: fraud_models.BeneficiaryFraudCheck, face_name: str, mime_type: Optional[str]
+) -> str:
+    extension = mimetypes.guess_extension(mime_type, strict=True)
+    return f"{fraud_check.userId}-{fraud_check.thirdPartyId}-{face_name}{extension}"
