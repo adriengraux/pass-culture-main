@@ -1,7 +1,3 @@
-/*
- * @debt deprecated "Gaël: deprecated usage of redux-saga-data"
- */
-
 import { getStateKeyFromApiPath, getStateKeyFromUrl } from 'redux-saga-data'
 
 const initialState = {}
