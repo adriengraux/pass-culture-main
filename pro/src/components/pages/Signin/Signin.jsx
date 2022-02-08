@@ -140,7 +140,11 @@ class Signin extends PureComponent {
                 </Link>
               </div>
               <div className="field buttons-field">
-                <Link className="secondary-link" to={accountCreationUrl}>
+                <Link
+                  className="secondary-link"
+                  onClick={analytics.logClickCreateAccount}
+                  to={accountCreationUrl}
+                >
                   Créer un compte
                 </Link>
                 <button
