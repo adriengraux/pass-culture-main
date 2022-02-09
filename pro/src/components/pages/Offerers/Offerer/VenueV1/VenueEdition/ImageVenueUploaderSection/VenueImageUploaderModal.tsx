@@ -66,9 +66,9 @@ export const VenueImageUploaderModal: FunctionComponent<Props> = ({
         />
       ) : (
         <VenueImagePreview
-          onGoToPrevious={() =>
-            alert('Pas encore dispo : il faut attendre PC-13201')
-          }
+          onGoToPrevious={() => {
+            setEditedImage('')
+          }}
           onUploadImage={() =>
             alert('Pas encore dispo : il faut attendre PC-13201')
           }
