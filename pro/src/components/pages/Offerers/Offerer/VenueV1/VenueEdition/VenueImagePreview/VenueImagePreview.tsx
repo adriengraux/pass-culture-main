@@ -6,6 +6,7 @@ import { VenuePreviews } from './VenuePreviews/VenuePreviews'
 
 interface Props {
   preview: string
+  children?: never
 }
 
 export const VenueImagePreview: FunctionComponent<Props> = ({ preview }) => (
