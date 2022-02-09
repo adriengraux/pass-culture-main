@@ -6,10 +6,16 @@ import { VenuePreviews } from './VenuePreviews/VenuePreviews'
 
 interface Props {
   preview: string
+  onGoToPrevious: () => void
+  onUploadImage: () => void
   children?: never
 }
 
-export const VenueImagePreview: FunctionComponent<Props> = ({ preview }) => (
+export const VenueImagePreview: FunctionComponent<Props> = ({
+  preview,
+  onGoToPrevious,
+  onUploadImage,
+}) => (
   <div className={style['container']}>
     <header>
       <h1 className={style['header']}>Image du lieu</h1>
@@ -21,7 +27,7 @@ export const VenueImagePreview: FunctionComponent<Props> = ({ preview }) => (
     <div className={style['actions']}>
       <button
         className={cn('secondary-button', style['button'])}
-        onClick={() => alert('Pas encore dispo : il faut attendre PC-13201')}
+        onClick={onGoToPrevious}
         title="Retour"
         type="button"
       >
@@ -29,7 +35,7 @@ export const VenueImagePreview: FunctionComponent<Props> = ({ preview }) => (
       </button>
       <button
         className={cn('primary-button', style['button'])}
-        onClick={() => alert('Pas encore dispo : il faut attendre PC-13201')}
+        onClick={onUploadImage}
         title="Suivant"
         type="button"
       >

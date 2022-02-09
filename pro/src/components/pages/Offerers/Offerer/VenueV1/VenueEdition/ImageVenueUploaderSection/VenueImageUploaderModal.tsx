@@ -65,7 +65,15 @@ export const VenueImageUploaderModal: FunctionComponent<Props> = ({
           onSetCredit={setCredit}
         />
       ) : (
-        <VenueImagePreview preview={editedImage} />
+        <VenueImagePreview
+          onGoToPrevious={() =>
+            alert('Pas encore dispo : il faut attendre PC-13201')
+          }
+          onUploadImage={() =>
+            alert('Pas encore dispo : il faut attendre PC-13201')
+          }
+          preview={editedImage}
+        />
       )}
     </DialogBox>
   )
