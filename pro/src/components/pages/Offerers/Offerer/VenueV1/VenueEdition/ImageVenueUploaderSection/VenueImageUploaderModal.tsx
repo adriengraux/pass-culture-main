@@ -57,6 +57,7 @@ export const VenueImageUploaderModal: FunctionComponent<Props> = ({
           orientation="landscape"
         />
       ) : !croppingRect || !editedImage ? (
+        // TODO: nouvelle US : garder le zoom + cropping rectangle au passage d'une modale à l'autre
         <VenueImageEdit
           closeModal={onDismiss}
           credit={credit}
