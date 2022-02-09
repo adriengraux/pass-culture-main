@@ -389,7 +389,8 @@ jobs:
           command: |
             python3 -m venv venv
             . venv/bin/activate
-            if [ ! -z "$(alembic branches)" ]; then echo "Multiple alembic heads found"; exit 1; fi
+            LINE_COUNT=$(wc -l \<<< "$(alembic heads)")
+            if [${LINE_COUNT} -ne 2 ]; then echo "There must be two heads";exit 1;fi
           working_directory: api
       - run:
           name: Check database and model are aligned
