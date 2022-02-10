@@ -33,7 +33,7 @@ export const VenueImageUploaderModal: FunctionComponent<Props> = ({
 
   const onSetImage = useCallback(
     file => {
-      return setImage(file)
+      setImage(file)
     },
     [setImage]
   )
