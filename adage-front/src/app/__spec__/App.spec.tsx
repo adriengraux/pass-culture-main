@@ -41,13 +41,6 @@ jest.mock('react-instantsearch-dom', () => {
   }
 })
 
-jest.mock('react-instantsearch-core', () => {
-  return {
-    ...jest.requireActual('react-instantsearch-core'),
-    refine: jest.fn(),
-  }
-})
-
 jest.mock('repository/pcapi/pcapi', () => ({
   authenticate: jest.fn(),
   getVenueBySiret: jest.fn(),
@@ -275,6 +268,23 @@ describe('app', () => {
       expect(queryTag('Collège - 4e')).toBeInTheDocument()
       expect(queryTag('Cinéma')).toBeInTheDocument()
       expect(queryTag('Musée')).toBeInTheDocument()
+    })
+
+    it('should call algolia with requested query', async () => {
+      // Given
+      render(<App />)
+      const launchSearchButton = await findLaunchSearchButton()
+
+      // When
+      const textInput = screen.getByPlaceholderText(placeholder)
+      userEvent.type(textInput, 'a')
+      launchSearchButton.click()
+
+      // Then
+      await waitFor(() => expect(Configure).toHaveBeenCalledTimes(2))
+      const searchConfigurationCall = (Configure as jest.Mock).mock.calls[1][0]
+      console.log(searchConfigurationCall)
+      // expect(props.refine).toHaveBeenCalledWith('a')
     })
 
     it('should remove deselected departments and students from filters sent to Algolia', async () => {

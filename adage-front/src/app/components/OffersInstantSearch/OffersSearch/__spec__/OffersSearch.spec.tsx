@@ -34,10 +34,10 @@ describe('offersSearch component', () => {
 
     // When
     const textInput = screen.getByPlaceholderText(placeholder)
-    userEvent.type(textInput, 'a')
+    userEvent.type(textInput, 'Paris')
     launchSearchButton.click()
 
     // Then
-    expect(props.refine).toHaveBeenCalledWith('a')
+    expect(props.refine).toHaveBeenCalledWith('Paris')
   })
 })
