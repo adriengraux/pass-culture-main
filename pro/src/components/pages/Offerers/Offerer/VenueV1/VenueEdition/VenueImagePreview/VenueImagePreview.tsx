@@ -1,6 +1,8 @@
 import cn from 'classnames'
 import React, { FunctionComponent } from 'react'
 
+import { SubmitButton } from 'ui-kit'
+
 import style from './VenueImagePreview.module.scss'
 import { VenuePreviews } from './VenuePreviews/VenuePreviews'
 
@@ -33,14 +35,12 @@ export const VenueImagePreview: FunctionComponent<Props> = ({
       >
         Retour
       </button>
-      <button
-        className={cn('primary-button', style['button'])}
+      <SubmitButton
+        className={style['button']}
+        disabled={false}
+        isLoading={false}
         onClick={onUploadImage}
-        title="Suivant"
-        type="button"
-      >
-        Enregistrer
-      </button>
+      />
     </div>
   </div>
 )
