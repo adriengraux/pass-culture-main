@@ -3,6 +3,7 @@ import { CroppedRect } from 'react-avatar-editor'
 
 import { imageConstraints } from 'new_components/ConstraintCheck/imageConstraints'
 import DialogBox from 'new_components/DialogBox'
+import { postImageToVenue } from 'repository/pcapi/pcapi'
 
 import { ImportFromComputer } from '../ImportFromComputer/ImportFromComputer'
 import { VenueImageEdit } from '../VenueImageEdit/VenueImageEdit'
@@ -11,6 +12,7 @@ import { VenueImagePreview } from '../VenueImagePreview/VenueImagePreview'
 import { IMAGE_TYPES, MAX_IMAGE_SIZE, MIN_IMAGE_WIDTH } from './constants'
 
 type Props = {
+  venueId: string
   onDismiss: () => void
 }
 
@@ -21,6 +23,7 @@ const constraints = [
 ]
 
 export const VenueImageUploaderModal: FunctionComponent<Props> = ({
+  venueId,
   onDismiss,
 }) => {
   const [image, setImage] = useState<File>()
@@ -70,9 +73,15 @@ export const VenueImageUploaderModal: FunctionComponent<Props> = ({
           onGoToPrevious={() => {
             setEditedImage('')
           }}
-          onUploadImage={() =>
-            alert('Pas encore dispo : il faut attendre PC-13201')
-          }
+          onUploadImage={() => {
+            postImageToVenue({
+              venueId,
+              banner: image,
+              xCropPercent: croppingRect.x,
+              yCropPercent: croppingRect.y,
+              heightCropPercent: croppingRect.height,
+            })
+          }}
           preview={editedImage}
         />
       )}
