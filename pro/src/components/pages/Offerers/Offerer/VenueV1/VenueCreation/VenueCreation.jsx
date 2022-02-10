@@ -13,6 +13,7 @@ import { NavLink } from 'react-router-dom'
 
 import Icon from 'components/layout/Icon'
 import PageTitle from 'components/layout/PageTitle/PageTitle'
+import Spinner from 'components/layout/Spinner'
 import Titles from 'components/layout/Titles/Titles'
 
 import ModifyOrCancelControl from '../controls/ModifyOrCancelControl/ModifyOrCancelControl'
@@ -33,30 +34,41 @@ import LocationFields, {
 } from '../fields/LocationFields'
 import WithdrawalDetailsFields from '../fields/WithdrawalDetailsFields'
 import { formatSiret } from '../siret/formatSiret'
-import VenueLabel from '../ValueObjects/VenueLabel'
-import VenueType from '../ValueObjects/VenueType'
 
 class VenueCreation extends PureComponent {
   constructor() {
     super()
-    this.state = { isRequestPending: false }
+    this.state = {
+      isReady: false,
+      isRequestPending: false, // TODO when removing requestData on submit, add a isLoading state
+      offerer: null,
+      venueTypes: null,
+      venueLabels: null,
+    }
   }
 
   componentDidMount() {
     const { handleInitialRequest } = this.props
-    handleInitialRequest()
+
+    handleInitialRequest().then(({ offerer, venueTypes, venueLabels }) => {
+      this.setState({
+        isReady: true,
+        offerer,
+        venueTypes,
+        venueLabels,
+      })
+    })
   }
 
-  handleFormFail = formResolver => (state, action) => {
+  handleFormFail = formResolver => (payload) => {
     const { handleSubmitRequestFail } = this.props
-    const { payload } = action
     const nextState = { isRequestPending: false }
     const errors = parseSubmitErrors(payload.errors)
-    handleSubmitRequestFail(state, action)
+    handleSubmitRequestFail(payload.errors)
     this.setState(nextState, () => formResolver(errors))
   }
 
-  handleFormSuccess = formResolver => (state, action) => {
+  handleFormSuccess = formResolver => (payload) => {
     const {
       handleSubmitRequestSuccess,
       history,
@@ -69,7 +81,7 @@ class VenueCreation extends PureComponent {
     const nextState = { isRequestPending: false }
 
     this.setState(nextState, () => {
-      handleSubmitRequestSuccess(state, action)
+      handleSubmitRequestSuccess(payload)
       formResolver()
     })
 
@@ -82,8 +94,6 @@ class VenueCreation extends PureComponent {
 
   handleOnFormSubmit = formValues => {
     const { handleSubmitRequest } = this.props
-
-    this.setState({ isRequestPending: true })
 
     return new Promise(resolve => {
       handleSubmitRequest({
@@ -98,15 +108,12 @@ class VenueCreation extends PureComponent {
     const {
       history,
       match: {
-        params: { offererId, venueId },
+        params: { offererId },
       },
-      venueTypes,
-      venueLabels,
-      offerer,
       isBankInformationWithSiretActive,
       isEntrepriseApiDisabled,
     } = this.props
-    const { isRequestPending } = this.state
+    const { isRequestPending, venueTypes, venueLabels, offerer } = this.state
     const readOnly = false
 
     const canSubmit = getCanSubmit(formProps)
@@ -150,7 +157,7 @@ class VenueCreation extends PureComponent {
           readOnly={readOnly}
         />
         <AccessibilityFields />
-        <ContactInfosFields />
+        <ContactInfosFields readOnly={false} />
         <hr />
         <div
           className="field is-grouped is-grouped-centered"
@@ -162,8 +169,8 @@ class VenueCreation extends PureComponent {
             isCreatedEntity
             offererId={offererId}
             readOnly={readOnly}
-            venueId={venueId}
           />
+
           <ReturnOrSubmitControl
             canSubmit={canSubmit}
             isCreatedEntity
@@ -182,9 +189,9 @@ class VenueCreation extends PureComponent {
       match: {
         params: { offererId },
       },
-      offerer,
       isEntrepriseApiDisabled,
     } = this.props
+    const { isReady } = this.state
 
     const decorators = [
       autoFillNoDisabilityCompliantDecorator,
@@ -194,8 +201,6 @@ class VenueCreation extends PureComponent {
     if (!isEntrepriseApiDisabled) {
       decorators.push(bindGetSiretInformationToSiret)
     }
-
-    const showForm = typeof offerer !== 'undefined'
 
     return (
       <div className="venue-page">
@@ -210,7 +215,9 @@ class VenueCreation extends PureComponent {
         <Titles title="Lieu" />
         <p className="advice">Ajoutez un lieu où accéder à vos offres.</p>
 
-        {showForm && (
+        {!isReady && <Spinner />}
+
+        {isReady && (
           <Form
             decorators={decorators}
             initialValues={formInitialValues}
@@ -234,10 +241,7 @@ VenueCreation.propTypes = {
   isBankInformationWithSiretActive: PropTypes.bool.isRequired,
   isEntrepriseApiDisabled: PropTypes.bool.isRequired,
   match: PropTypes.shape().isRequired,
-  offerer: PropTypes.shape().isRequired,
   trackCreateVenue: PropTypes.func.isRequired,
-  venueLabels: PropTypes.arrayOf(PropTypes.instanceOf(VenueLabel)).isRequired,
-  venueTypes: PropTypes.arrayOf(PropTypes.instanceOf(VenueType)).isRequired,
 }
 
 export default VenueCreation
