@@ -30,6 +30,7 @@ export const VenueImageUploaderModal: FunctionComponent<Props> = ({
   const [credit, setCredit] = useState('')
   const [croppingRect, setCroppingRect] = useState<CroppedRect>()
   const [editedImage, setEditedImage] = useState('')
+  const [isUploading, setIsUploading] = useState(false)
 
   const onSetImage = useCallback(
     file => {
@@ -70,17 +71,20 @@ export const VenueImageUploaderModal: FunctionComponent<Props> = ({
         />
       ) : (
         <VenueImagePreview
+          isUploading={isUploading}
           onGoToPrevious={() => {
             setEditedImage('')
           }}
-          onUploadImage={() => {
-            postImageToVenue({
+          onUploadImage={async () => {
+            setIsUploading(true)
+            await postImageToVenue({
               venueId,
               banner: image,
               xCropPercent: croppingRect.x,
               yCropPercent: croppingRect.y,
               heightCropPercent: croppingRect.height,
             })
+            setIsUploading(false)
           }}
           preview={editedImage}
         />

@@ -11,9 +11,11 @@ interface Props {
   onGoToPrevious: () => void
   onUploadImage: () => void
   children?: never
+  isUploading: boolean
 }
 
 export const VenueImagePreview: FunctionComponent<Props> = ({
+  isUploading,
   preview,
   onGoToPrevious,
   onUploadImage,
@@ -38,7 +40,7 @@ export const VenueImagePreview: FunctionComponent<Props> = ({
       <SubmitButton
         className={style['button']}
         disabled={false}
-        isLoading={false}
+        isLoading={isUploading}
         onClick={onUploadImage}
       />
     </div>
