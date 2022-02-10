@@ -47,6 +47,10 @@ export const VenueImageUploaderModal: FunctionComponent<Props> = ({
     [setEditedImage, setCroppingRect]
   )
 
+  const navigateFromPreviewToEdit = useCallback(() => {
+    setEditedImage('')
+  }, [setEditedImage])
+
   return (
     <DialogBox
       hasCloseButton
@@ -72,9 +76,7 @@ export const VenueImageUploaderModal: FunctionComponent<Props> = ({
       ) : (
         <VenueImagePreview
           isUploading={isUploading}
-          onGoToPrevious={() => {
-            setEditedImage('')
-          }}
+          onGoToPrevious={navigateFromPreviewToEdit}
           onUploadImage={async () => {
             setIsUploading(true)
             await postImageToVenue({
